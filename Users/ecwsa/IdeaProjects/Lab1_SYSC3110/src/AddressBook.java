@@ -27,5 +27,7 @@ public class AddressBook
         addressBook.removeBuddy(buddy1);
         BuddyInfo buddy2 = new BuddyInfo("Santa", "North-Pole", 888);
         addressBook.addBuddy(buddy2);
+        addressBook.removeBuddy(buddy2);
     }
 }
+
