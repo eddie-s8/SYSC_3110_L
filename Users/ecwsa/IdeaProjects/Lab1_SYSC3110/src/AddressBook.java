@@ -18,6 +18,13 @@ public class AddressBook
         this.buddies.remove(buddy);
     }
 
+    public void findBuddy(BuddyInfo buddy){
+        if (this.buddies.contains(buddy)){
+            System.out.println("Buddy " + buddy.getName() + buddy.getAddress() + buddy.getPhoneNumber());
+        }
+        System.out.println("Buddy not found");
+    }
+
     public static void main(String[] args)
     {
         System.out.println("Address Book");
