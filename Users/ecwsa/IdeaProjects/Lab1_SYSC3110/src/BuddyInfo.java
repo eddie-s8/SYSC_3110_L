@@ -24,6 +24,13 @@ public class BuddyInfo {
         this.address = address;
         this.phoneNumber = phoneNumber;
     }
+    @Override
+    public String toString() {
+        return "Name: " + name;
+    }
+    public String fullBuddyInfo(){
+        return "Name: " + name + " Address: " + address + " PhoneNumber: " + phoneNumber;
+    }
 
     public static void main(String[] args) {
         BuddyInfo Elmo = new BuddyInfo("Elmo", "Sesame Street", 123456789);
