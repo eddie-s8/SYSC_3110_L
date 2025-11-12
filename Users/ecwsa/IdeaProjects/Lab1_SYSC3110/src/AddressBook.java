@@ -1,29 +1,57 @@
 import java.util.*;
+import javax.swing.*;
 
-public class AddressBook
+
+
+public class AddressBook extends DefaultListModel<BuddyInfo>
 {
     private List<BuddyInfo> buddies;
     public  AddressBook(){
-        this.buddies = new ArrayList<>();
+        super();
     }
 
     public void addBuddy(BuddyInfo buddy){
-        if (this.buddies.contains(buddy)){
+        if (this.contains(buddy)){
             System.out.println("Buddy " + buddy.getName() + " already exists");
         }
-        this.buddies.add(buddy);
+        this.addElement(buddy);
     }
 
     public void removeBuddy(BuddyInfo buddy){
-        this.buddies.remove(buddy);
+        this.removeElement(buddy);
     }
 
-    public void findBuddy(BuddyInfo buddy){
-        if (this.buddies.contains(buddy)){
+    public void removeBuddy(int index){
+        this.removeElementAt(index);
+    }
+    public BuddyInfo getBuddy(String buddyName){
+        for (BuddyInfo buddy : this.buddies){
+            if (buddy.getName().equals(buddyName)){
+                return buddy;
+            }
+        }
+        return null;
+    }
+
+
+    public boolean findBuddy(BuddyInfo buddy){
+        if (this.contains(buddy)){
             System.out.println("Buddy " + buddy.getName() + buddy.getAddress() + buddy.getPhoneNumber());
+            return true;
         }
         System.out.println("Buddy not found");
+        return false;
     }
+
+    public BuddyInfo getBuddy(int index){
+        if (this.contains(index)){
+            return this.getElementAt(index);
+        }
+        return null;
+
+    }
+
+
 
     public static void main(String[] args)
     {
