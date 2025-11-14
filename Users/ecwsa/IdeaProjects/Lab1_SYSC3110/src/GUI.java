@@ -6,14 +6,18 @@ import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.IOException;
 
 public class GUI extends JFrame {
     private AddressBook addressBook;
-    private JLabel x;
+    private JLabel status;
     private JList<BuddyInfo> buddyList;
+    private DefaultListModel<BuddyInfo> modelList;
 
     public GUI() {
         this.addressBook = new AddressBook();
+        this.modelList = new DefaultListModel<>();
         initializeGUI();
 
     }
@@ -23,11 +27,12 @@ public class GUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setBounds(100, 100, 450, 300);
 
-        x = new JLabel();
+        status = new JLabel();
 
         createMenuBar();
         setupMainPanel();
         setupStatusBar();
+        updateBuddyList();
     }
     private void createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
@@ -35,12 +40,26 @@ public class GUI extends JFrame {
 
         JMenuItem newAddressBookItem = new JMenuItem("New AddressBook");
         JMenuItem displayBuddyItem = new JMenuItem("Display Buddy");
+        JMenuItem exportAddressBookItem = new JMenuItem("Export AddressBook");
+        JMenuItem importAddressBookItem = new JMenuItem("Import AddressBook");
+        JMenuItem serializeAddressBookItem = new JMenuItem("Serialize AddressBook");
+        JMenuItem deserializeAddressBookItem = new JMenuItem("Deserialize AddressBook");
 
         newAddressBookItem.addActionListener(e -> createNewAddressBook());
         displayBuddyItem.addActionListener(e -> displayBuddy());
+        exportAddressBookItem.addActionListener(e -> exportAddressBook());
+        importAddressBookItem.addActionListener(e -> importAddressBook());
+        serializeAddressBookItem.addActionListener(e -> serilializeAddressBook());
+        deserializeAddressBookItem.addActionListener(e -> deserializeAddressBook());
 
         addressBookMenu.add(newAddressBookItem);
         addressBookMenu.add(displayBuddyItem);
+        addressBookMenu.addSeparator();
+        addressBookMenu.add(exportAddressBookItem);
+        addressBookMenu.add(importAddressBookItem);
+        addressBookMenu.addSeparator();
+        addressBookMenu.add(serializeAddressBookItem);
+        addressBookMenu.add(deserializeAddressBookItem);
 
         JMenu buddyInfoMenu = new JMenu("BuddyInfo");
 
@@ -63,7 +82,7 @@ public class GUI extends JFrame {
     private void setupMainPanel() {
         setLayout(new BorderLayout());
 
-        buddyList = new JList<>(addressBook);
+        buddyList = new JList<>(modelList);
         buddyList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         buddyList.setFont(new Font("Times New Roman", Font.BOLD, 16));
         buddyList.setVisible(true);
@@ -107,13 +126,13 @@ public class GUI extends JFrame {
     }
 
     public void setupStatusBar(){
-        x = new JLabel("ready");
-        x.setFont(new Font("Times New Roman", Font.BOLD, 18));
-        x.setBorder(BorderFactory.createLineBorder(Color.black));
-        x.setHorizontalAlignment(SwingConstants.CENTER);
+        status = new JLabel("ready");
+        status.setFont(new Font("Times New Roman", Font.BOLD, 18));
+        status.setBorder(BorderFactory.createLineBorder(Color.black));
+        status.setHorizontalAlignment(SwingConstants.CENTER);
 
         JPanel statusPanel = new JPanel(new BorderLayout());
-        statusPanel.add(x, BorderLayout.CENTER);
+        statusPanel.add(status, BorderLayout.CENTER);
         add(statusPanel, BorderLayout.PAGE_START);
     }
 
@@ -125,12 +144,13 @@ public class GUI extends JFrame {
                 JOptionPane.QUESTION_MESSAGE);
         if (choice == JOptionPane.YES_OPTION) {
             addressBook = new AddressBook();
+            updateBuddyList();
             setStatus("New address book created");
         }
     }
 
     private void displayBuddy() {
-        if (addressBook.isEmpty()) {
+        if (modelList.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                     "address book has no buddies currently",
                     "Display Buddy",
@@ -141,8 +161,8 @@ public class GUI extends JFrame {
             if (selectedIndex == -1) {
                 StringBuilder details = new StringBuilder();
                 details.append("All buddies information: \n\n");
-                for (int i = 0; i < addressBook.size(); i++) {
-                    BuddyInfo buddy = addressBook.getElementAt(i);
+                for (int i = 0; i < modelList.size(); i++) {
+                    BuddyInfo buddy = modelList.getElementAt(i);
                     details.append("Name: ").append(buddy.getName()).append("\n");
                     details.append("Address: ").append(buddy.getAddress()).append("\n");
                     details.append("Phone: ").append(buddy.getPhoneNumber()).append("\n");
@@ -187,6 +207,7 @@ public class GUI extends JFrame {
             int phoneNum = Integer.parseInt(phoneNumber);
             BuddyInfo newBuddy = new BuddyInfo(name, address, phoneNum);
             addressBook.addBuddy(newBuddy);
+            updateBuddyList();
             setStatus("buddy added: " + name);
         }
     }
@@ -215,6 +236,7 @@ public class GUI extends JFrame {
                  JOptionPane.QUESTION_MESSAGE);
          if (choice == JOptionPane.YES_OPTION) {
                  addressBook.removeBuddy(selectedIndex);
+                 updateBuddyList();
                  setStatus("buddy removed: " + buddyName);
          } else {
                  JOptionPane.showMessageDialog(this,
@@ -224,9 +246,102 @@ public class GUI extends JFrame {
              }
         }
 
+        public void exportAddressBook() {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("export address book");
+            chooser.setApproveButtonText("export");
 
-    private void setStatus(String status) {
-        x.setText(status);
+            int input =chooser.showSaveDialog(this);
+            if (input == JFileChooser.APPROVE_OPTION) {
+                java.io.File f = chooser.getSelectedFile();
+
+                try {
+                    addressBook.save(f.getAbsolutePath());
+
+                    JOptionPane.showMessageDialog(this, "Address book saved to: " + f.getAbsolutePath(), "Export success", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(this, e.getMessage(), "Export error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+
+        public void importAddressBook() {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("import address book");
+            chooser.setApproveButtonText("import");
+
+            int input =chooser.showOpenDialog(this);
+            if (input == JFileChooser.APPROVE_OPTION) {
+                File f = chooser.getSelectedFile();
+                System.out.println("File: " + f.getAbsolutePath());
+
+                try {
+                    AddressBook importBook = AddressBook.importAddressBook(f.getAbsolutePath());
+                    this.addressBook = importBook;
+                    updateBuddyList();
+                    JOptionPane.showMessageDialog(this, "Address book imported: " + f.getAbsolutePath(), "Import success", JOptionPane.INFORMATION_MESSAGE);
+                }catch(Exception e) {
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(this, e.getMessage(), "Import error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+
+        }
+
+        private void serilializeAddressBook() {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("serialize address book");
+            chooser.setApproveButtonText("serialize");
+
+            int input =chooser.showSaveDialog(this);
+            if (input == JFileChooser.APPROVE_OPTION) {
+                File f = chooser.getSelectedFile();
+                if (!f.getName().toLowerCase().endsWith(".ser")) {
+                    f = new File(f.getAbsolutePath() + ".ser");
+                }
+                try {
+                    addressBook.serializeAddressBook(f.getAbsolutePath());
+                    JOptionPane.showMessageDialog(this, "Address book serialized: " + f.getAbsolutePath(), "Serialize success", JOptionPane.INFORMATION_MESSAGE);
+
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(this, e.getMessage(), "Serialize error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+
+        }
+
+        private void deserializeAddressBook() {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("deserialize address book");
+            chooser.setApproveButtonText("deserialize");
+
+            int input =chooser.showSaveDialog(this);
+            if (input == JFileChooser.APPROVE_OPTION) {
+                File f = chooser.getSelectedFile();
+
+                try {
+                    AddressBook deserializeBook = AddressBook.deserializeAddressBook(f.getAbsolutePath());
+                    this.addressBook = deserializeBook;
+                    updateBuddyList();
+
+                    JOptionPane.showMessageDialog(this, "Address book deserialized: " + f.getAbsolutePath(), "Deserialize success", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(this, e.getMessage(), "Deserialize error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+
+
+    private void setStatus(String statusX) {
+        status.setText(statusX);
+    }
+
+    private void updateBuddyList() {
+        modelList.clear();
+        for (BuddyInfo buddy : addressBook.getBuddies()) {
+            modelList.addElement(buddy);
+        }
+        setStatus("buddy list updated");
     }
 
     public static void main(String[] args) {
