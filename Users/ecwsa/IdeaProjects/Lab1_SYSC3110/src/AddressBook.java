@@ -1,12 +1,21 @@
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
 import java.io.*;
 import java.util.*;
 import javax.swing.*;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamWriter;
 
 
-
-public class AddressBook implements Serializable
+public class AddressBook extends DefaultHandler implements Serializable
 {
     private List<BuddyInfo> buddies = new ArrayList<>();
+    private StringBuilder current;
+    private BuddyInfo currentBuddy;
     public  AddressBook(){
         super();
     }
@@ -108,6 +117,108 @@ public class AddressBook implements Serializable
 
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public String toXML() {
+        try{
+            StringWriter sw = new StringWriter();
+            XMLStreamWriter xmlWriter = XMLOutputFactory.newInstance().createXMLStreamWriter(sw);
+
+            xmlWriter.writeStartElement("AddressBook");
+            xmlWriter.writeCharacters("\n");
+
+            for (BuddyInfo buddy : buddies){
+                xmlWriter.writeStartElement("BuddyInfo");
+                xmlWriter.writeStartElement("name");
+                xmlWriter.writeCharacters(buddy.getName() != null ? buddy.getName() : "");
+                xmlWriter.writeEndElement();
+
+                xmlWriter.writeStartElement("address");
+                xmlWriter.writeCharacters(buddy.getAddress() != null ? buddy.getAddress() : "");
+                xmlWriter.writeEndElement();
+
+                xmlWriter.writeStartElement("phoneNumber");
+                xmlWriter.writeCharacters(String.valueOf(buddy.getPhoneNumber()));
+                xmlWriter.writeEndElement();
+
+                xmlWriter.writeEndElement();
+            }
+            xmlWriter.writeEndElement();
+            xmlWriter.close();
+            return sw.toString();
+        } catch (Exception e){
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+            return "error";
+        }
+    }
+
+    public void exportToXML(String file){
+        try (FileWriter writer = new FileWriter(file)){
+            writer.write(toXML());
+            System.out.println("Exported AddressBook to: " + file);
+        } catch (Exception e){
+            System.out.println("ERROR EXPORTING to XML: " + e.getMessage());
+        }
+    }
+
+    public void importFromXML(String file){
+
+        try{
+            SAXParserFactory spf = SAXParserFactory.newInstance();
+            SAXParser s = spf.newSAXParser();
+
+            File fileXML = new File(file);
+
+            if (!fileXML.exists()){
+                System.err.println("File " + fileXML.getAbsolutePath() + " does not exist");
+                return;
+            }
+            s.parse(fileXML, this);
+            System.out.println("Imported AddressBook from: " + file);
+
+        } catch (Exception e){
+            System.out.println("ERROR IMPORTING from XML: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException{
+        current = new StringBuilder();
+        if ("BuddyInfo".equals(qName)){
+            currentBuddy = new BuddyInfo();
+        }
+
+    }
+
+    @Override
+    public void endElement(String uri, String localName, String qName) throws SAXException{
+        if (currentBuddy != null){
+            switch (qName){
+                case "name":
+                    currentBuddy.setName(current.toString().trim());
+                    break;
+                case "address":
+                    currentBuddy.setAddress(current.toString().trim());
+                    break;
+                case "phoneNumber":
+                    String phone = current.toString().trim();
+                    String cleanPhone = phone.replaceAll("[^0-9]", "");
+                    currentBuddy.setPhoneNumber(Integer.parseInt(cleanPhone));
+                    break;
+                case "BuddyInfo":
+                    buddies.add(currentBuddy);
+                    currentBuddy = null;
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void characters(char[] ch, int start, int length) throws SAXException{
+        if (current != null){
+            current.append(new String(ch, start, length));
         }
     }
 

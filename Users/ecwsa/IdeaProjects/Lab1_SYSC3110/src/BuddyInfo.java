@@ -1,4 +1,7 @@
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamWriter;
 import java.io.Serializable;
+import java.io.StringWriter;
 import java.util.Scanner;
 
 public class BuddyInfo implements Serializable {
@@ -46,6 +49,47 @@ public class BuddyInfo implements Serializable {
             }
             return new BuddyInfo(name, address, phoneNumber);
         }
+    }
+
+    public String toXML() {
+        try{
+            StringWriter sw = new StringWriter();
+            XMLStreamWriter xmlWriter = XMLOutputFactory.newInstance().createXMLStreamWriter(sw);
+
+            xmlWriter.writeStartElement("BuddyInfo");
+            xmlWriter.writeStartElement("name");
+            xmlWriter.writeCharacters(name != null ? name : "");
+            xmlWriter.writeEndElement();
+
+            xmlWriter.writeStartElement("address");
+            xmlWriter.writeCharacters(address != null ? address : "");
+            xmlWriter.writeEndElement();
+
+            xmlWriter.writeStartElement("phoneNumber");
+            xmlWriter.writeCharacters(String.valueOf(phoneNumber));
+            xmlWriter.writeEndElement();
+
+            xmlWriter.writeEndElement();
+            xmlWriter.close();
+
+            return sw.toString();
+        } catch (Exception e){
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+            return "error";
+        }
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public void setPhoneNumber(int phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public static void main(String[] args) {
